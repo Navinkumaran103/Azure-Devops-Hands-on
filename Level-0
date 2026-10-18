@@ -1,0 +1,147 @@
+Azure DevOps Mental Model
+
+Goal
+
+Understand what Azure DevOps is and trace code from a developer’s change through Git, a pipeline, an artifact, and deployment.
+
+1. What is Azure DevOps?
+Azure DevOps is a collection of tools that support the software delivery lifecycle.
+Service	Purpose
+Azure Boards	Tracks work items, bugs, user stories, and tasks
+Azure Repos	Hosts Git repositories
+Azure Pipelines	Automates builds and CI/CD
+Azure Artifacts	Hosts package and artifact feeds
+Azure Test Plans	Supports test planning and management
+
+
+For the initial DevOps learning path, focus on Repos, Pipelines, Boards, and Artifacts.
+
+2. From a requirement to a code change
+
+Example requirement: “Add a login page.”
+1. A user story is created in Azure Boards: User Story #101 — Implement login page.
+2. The developer creates a feature branch, for example feature/login.
+3. The developer changes the application and commits the change.
+git add .
+git commit -m "Add login page"
+git push
+
+3. How a push can trigger a pipeline
+When a repository pipeline is configured with a matching trigger, pushing a change can start the pipeline automatically.
+Push to main
+    ↓
+Pipeline trigger
+    ↓
+Pipeline starts
+The trigger depends on the pipeline configuration; a push does not automatically trigger every pipeline.
+
+4. What a CI pipeline does
+A typical pipeline might:
+1. Get the source code.
+2. Install dependencies.
+3. Build the application.
+4. Run tests.
+5. Package the application.
+6. Publish the build output as an artifact.
+This is a common Continuous Integration (CI) workflow.
+
+5. What is an artifact?
+An artifact is a packaged output produced by a build, such as MyApplication.zip, that can be stored and used later.
+Build
+  ↓
+MyApplication.zip
+  ↓
+Published artifact
+A common practice is build once, deploy the same artifact to multiple environments:
+Build 157
+   ↓
+Artifact
+   ↓
+DEV
+   ↓
+QA
+   ↓
+PROD
+This helps ensure that the version tested in earlier environments is the same version promoted to production, rather than rebuilding separately for each environment.
+This idea is important for the Build-to-Release Traceability project.
+
+6. What is CD?
+Continuous Delivery/Deployment (CD) takes a build artifact through deployment stages. Depending on the process, production deployment may require approval.
+Artifact → DEV → QA → Approval → PROD
+
+7. The end-to-end mental model
+Developer
+    ↓
+Azure Repos
+    ↓ git push
+Azure Pipelines
+    ├── Build
+    ├── Test
+    └── Package
+          ↓
+       Artifact
+          ↓
+         DEV
+          ↓
+          QA
+          ↓
+       Approval
+          ↓
+         PROD
+Azure Boards tracks the reason for the change and can link work items to branches, commits, builds, and deployments.
+Requirement
+    ↓
+Azure Boards work item
+    ↓
+Git branch
+    ↓
+Commit
+    ↓
+Pipeline
+    ↓
+Build
+    ↓
+Artifact
+    ↓
+Deployment
+
+8. What is an agent?
+An agent is the machine or execution environment that runs the pipeline steps.
+It can check out source code, run commands, compile, test, and publish artifacts.
+Azure Pipelines
+      ↓
+     Agent
+      ├── Check out code
+      ├── Run commands
+      ├── Build
+      ├── Test
+      └── Publish artifact
+
+9. Organization and project
+- Organization: The top-level Azure DevOps container.
+- Project: A workspace within an organization.
+Organization
+   ├── Project A
+   ├── Project B
+   └── Project C
+A project can contain Boards, Repos, Pipelines, Artifacts, and Test Plans. For this learning path, use one project to practise the workflow.
+
+Lab 1 — Explore Azure DevOps
+Open the Azure DevOps playground available in KodeKloud. Explore the following areas. 
+- [ ] Organization
+- [ ] Project
+- [ ] Repos
+- [ ] Pipelines
+- [ ] Boards
+- [ ] Artifacts
+- [ ] Agent pools
+
+
+Quick review
+Before moving on, try to explain in your own words:
+1. What is the purpose of Azure Repos?
+2. What can cause an Azure Pipeline to start?
+3. What does a CI pipeline usually do?
+4. Why publish an artifact instead of rebuilding separately for every environment?
+5. What does an agent do?
+6. What is the difference between an organization and a project?
