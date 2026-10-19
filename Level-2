@@ -1,1 +1,231 @@
+AZURE PIPELINES FUNDAMENTALS
+
+1. What is an Azure Pipeline?
+
+An Azure Pipeline automates the steps involved in building, testing, and delivering code or other application outputs.
+Instead of manually running each step, we define the workflow in Azure DevOps. Azure Pipelines executes the defined work on an agent.
+A pipeline can:
+Run automatically when code changes.
+Run manually.
+Execute scripts and predefined tasks.
+Run tests and validate outputs.
+Publish artifacts for later stages or jobs.
+Control execution based on conditions.
+Example workflow:
+Code change → Build → Test → Deploy
+
+What is a YAML pipeline?
+
+YAML is a human-readable format used to define the pipeline configuration as code.
+
+Example:
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: echo "Hello Azure DevOps"
+  displayName: "First step"
+This pipeline:
+Runs when changes to the main branch trigger it.
+Requests a Microsoft-hosted Ubuntu agent.
+Executes a Bash command that prints a message.
+
+2. YAML pipeline structure
+The main hierarchy is:
+Pipeline → Stage → Job → Step → Task/Script
+Pipeline
+The overall workflow, defined by the YAML file.
+Stage
+A logical phase of the pipeline, such as Build, Test, or Deploy.
+Job
+A collection of steps that execute together on an agent. Jobs are separate execution units.
+Step
+An individual action within a job. A step can run a script or invoke a task.
+Task
+A reusable operation provided by Azure DevOps or an extension, configured with inputs.
+Script
+Commands executed by a shell, such as Bash on Linux or PowerShell on Windows.
+Example:
+stages:
+- stage: Build
+  jobs:
+  - job: BuildJob
+    steps:
+    - script: echo "Building application"
+      displayName: "Build message"
+Remember:
+A pipeline can contain multiple stages.
+A stage can contain multiple jobs.
+A job contains steps.
+Steps can use scripts or tasks.
+
+3. Triggers
+A trigger determines when a pipeline starts automatically.
+Basic branch trigger
+trigger:
+- main
+This configures the pipeline to trigger for changes to the main branch, subject to the pipeline's configuration and applicable policies.
+Branch and path filters
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - azure-pipelines.yml
+This restricts the configured trigger to changes on main that affect the specified path.
+Important distinctions:
+A branch filter determines which branches qualify.
+A path filter determines which changed files qualify.
+A trigger is different from a job dependency.
+A manual run is different from an automatic trigger.
+
+4. Agents and agent pools
+An agent is the machine or execution environment that runs a pipeline job.
+Microsoft-hosted agent
+Example:
+pool:
+  vmImage: ubuntu-latest
+Azure DevOps provisions a hosted agent for the job.
+We inspected logs showing:
+Agent pool: Azure Pipelines
+Agent OS: Linux
+Workspace: /home/vsts/work/1/s
+The exact workspace can vary between runs and jobs.
+Self-hosted agent
+A self-hosted agent is installed and configured on a machine managed by your organisation.
+Typical reasons to use one:
+Access to internal servers or networks.
+Custom software or dependencies.
+More control over the execution environment.
+Special hardware or configuration requirements.
+A self-hosted agent requires maintenance, updates, security controls, and capacity management.
+Agent pools
+An agent pool groups agents that can execute jobs. A job requests an appropriate pool, and Azure Pipelines selects an available compatible agent.
+Important: job workspaces
+Do not assume that files created in one job automatically exist in another job. Jobs may execute on different agents or clean workspaces.
+Use an artifact when a later job or stage needs a file produced earlier.
+
+5. Steps, scripts, and tasks
+Script example
+steps:
+- script: |
+    echo "Starting validation"
+    pwd
+    ls -la
+  displayName: "Inspect workspace"
+The | character allows a multiline script.
+On a Linux agent, the commands run in Bash for this kind of script.
+Task example
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: 'my-file.txt'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)/copied'
+A task is a predefined operation. Its inputs configure what it does.
+Examples used in our learning:
+CopyFiles@2 — copies files.
+PublishPipelineArtifact@1 — publishes an artifact.
+DownloadPipelineArtifact@2 — downloads an artifact.
+Use a script when custom command logic is appropriate. Use a built-in task when it provides the operation you need.
+
+6. Variables
+Variables store values that can be reused in the pipeline.
+Example:
+variables:
+  environment: dev
+  appName: demo-app
+
+steps:
+- script: |
+    echo "Environment: $(environment)"
+    echo "Application: $(appName)"
+Variable scopes
+Variables can be defined at pipeline, stage, and job scope.
+When the same variable name is defined at multiple scopes, the more local definition takes precedence: job over stage, and stage over pipeline.
+Macro syntax
+$(environment)
+This syntax is commonly used to insert a variable value into task inputs and scripts before execution.
+Template expressions
+${{ variables.environment }}
+Template expressions are evaluated during template expansion, before runtime execution.
+Runtime expressions
+$[eq(variables['environment'], 'dev')]
+Runtime expressions are evaluated during pipeline execution and are useful for conditions and expression-based assignments.
+Do not treat these three syntaxes as interchangeable. Their evaluation timing and supported contexts differ.
+
+7. Predefined and environment variables
+Predefined variables
+Azure DevOps supplies built-in variables with information about the pipeline and agent.
+Examples:
+$(Agent.OS)
+$(Agent.Name)
+$(Build.SourcesDirectory)
+$(Build.ArtifactStagingDirectory)
+$(Pipeline.Workspace)
+Their purposes include:
+Identifying the agent operating system.
+Identifying the agent.
+Locating checked-out source code.
+Locating the artifact staging directory.
+Locating the pipeline workspace.
+Environment variables in Bash
+Pipeline variables can be exposed to scripts as environment variables. For many predefined variables, periods are converted to underscores and names are uppercased.
+Examples used in our lessons:
+echo "AGENTOS"echo"AGENT_NAME"
+echo "$BUILD_SOURCESDIRECTORY"
+Be careful: not every variable is automatically available to every process in every form. Explicitly map custom variables into a task's environment when necessary.
+
+8. Conditions and expressions
+Conditions determine whether a stage, job, or step should run.
+Common functions
+succeeded() — dependencies have succeeded.
+failed() — a relevant dependency has failed.
+always() — the step or job can run regardless of success or failure, subject to pipeline cancellation and other execution rules.
+eq(a, b) — checks equality.
+and(a, b) — both conditions must be true.
+or(a, b) — at least one condition must be true.
+Example: deploy only to development
+condition: and(
+  succeeded(),
+  eq(variables['environment'], 'dev')
+)
+This requires the relevant dependencies to have succeeded and the environment variable to equal dev.
+Dependencies
+- stage: Test
+  dependsOn: Build
+The Test stage depends on Build. By default, dependent stages normally run only when their dependencies succeed.
+A condition controls eligibility to run; it does not create an artifact or transfer files.
+
+9. Pipeline logs and troubleshooting
+Logs show what happened during a run, including task starts, commands, outputs, warnings, and errors.
+A reliable troubleshooting process:
+Identify the first failing stage, job, or step.
+Open that step's logs.
+Read the actual error message.
+Check the command, variable expansion, paths, indentation, and task inputs.
+Make one targeted correction.
+Rerun and verify the result.
+
+10. Artifacts between jobs and stages
+An artifact is a named collection of files produced by a pipeline run that can be consumed later.
+Publish an artifact
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)'
+    artifact: 'app-output'
+    publishLocation: 'pipeline'
+Download an artifact
+- task: DownloadPipelineArtifact@2
+  inputs:
+    artifact: 'app-output'
+    path: '$(Pipeline.Workspace)/downloaded'
+The publishing task uploads files under the artifact name app-output. The download task retrieves that artifact into the specified directory.
+Why artifacts matter
+Jobs may use different agents or workspaces. Publishing and downloading an artifact creates an explicit handoff instead of relying on files remaining on the same machine.
+
+
 
