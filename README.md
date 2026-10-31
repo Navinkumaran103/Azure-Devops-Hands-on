@@ -12,18 +12,6 @@ Use this cycle for each topic:
 
 Understand → Practise → Break it → Troubleshoot → Explain it → Record the lesson
 
-Study Session (60 minutes)
-- 10 min: Learn one concept.
-- 35 min: Complete a hands-on task.
-- 10 min: Answer questions or troubleshoot a failure.
-- 5 min: Explain what I learned in my own words.
-Notes Rule
-Do not write down videos word for word. For each topic, record only:
-- What is it?
-- Why is it needed?
-- How does it work?
-- Example
-- Common failure and troubleshooting steps
 
 Learning Roadmap
 
